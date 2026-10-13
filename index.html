@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f7f3">
+  <meta name="description" content="整理笔试、面试和重要截止日期的清爽日程表。">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon-192.png" sizes="192x192" type="image/png">
+  <title>日程安排 · 笔试面试时间表</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        <div><strong>日程安排</strong><small>把重要的日子，安排得明明白白</small></div>
+      </div>
+      <div class="top-actions">
+        <span class="local-badge" title="日程保存在这台设备">● 手机保存</span>
+        <button class="button button-primary" id="addTop" type="button"><span aria-hidden="true">＋</span> 新建日程</button>
+      </div>
+    </header>
+
+    <main class="main-layout">
+      <section class="workspace" aria-label="日程表">
+        <div class="stats" id="stats" aria-label="日程概览"></div>
+
+        <div class="calendar-card">
+          <div class="calendar-toolbar">
+            <div class="month-heading"><span class="eyebrow">CALENDAR</span><h2 id="monthTitle"></h2></div>
+            <div class="calendar-controls">
+              <button class="icon-button" id="prevWeek" type="button" aria-label="上一周">‹</button>
+              <button class="today-button" id="todayButton" type="button">今天</button>
+              <button class="icon-button" id="nextWeek" type="button" aria-label="下一周">›</button>
+              <span class="divider"></span>
+              <div class="segmented" role="group" aria-label="视图"><button id="weekView" type="button" class="active">周视图</button><button id="dayView" type="button">日视图</button></div>
+            </div>
+          </div>
+          <div class="legend"><button class="filter active" data-filter="all" type="button"><i class="dot all"></i>全部</button><button class="filter" data-filter="written" type="button"><i class="dot written"></i>笔试</button><button class="filter" data-filter="interview" type="button"><i class="dot interview"></i>面试</button><button class="filter" data-filter="deadline" type="button"><i class="dot deadline"></i>其他事项</button><span class="legend-hint">点击日程查看详情 · 点击空白时间快速创建</span></div>
+          <div class="calendar-scroll" id="calendarScroll"><div class="calendar" id="calendar"></div></div>
+        </div>
+      </section>
+
+      <aside class="sidebar" aria-label="近期安排">
+        <div class="side-card upcoming"><div class="side-title"><div><span class="eyebrow">COMING UP</span><h2>接下来</h2></div><span class="title-icon" aria-hidden="true">↗</span></div><div id="upcomingList"></div></div>
+        <div class="side-card quick-card"><div class="quick-icon" aria-hidden="true">✦</div><h3>有新安排？</h3><p>记下考试名称、时间和地点，临近时一眼就能找到。</p><button class="button button-dark" id="addSide" type="button">＋ 添加一场考试</button></div>
+        <div class="side-card utility"><div class="side-title compact"><h3>我的数据</h3></div><p>日程只保存在当前设备的这个浏览器中。定期下载备份；换手机后可以导入。</p><div class="utility-actions"><button id="exportJson" type="button">↓ 备份数据</button><button id="importJson" type="button">↑ 导入备份</button><button id="exportIcs" type="button">↗ 导出日历</button></div><input id="importFile" type="file" accept="application/json,.json" hidden></div>
+      </aside>
+    </main>
+  </div>
+
+  <dialog id="eventDialog" class="event-dialog"><form id="eventForm" novalidate><div class="dialog-head"><div><span class="eyebrow">SCHEDULE DETAILS</span><h2 id="dialogTitle">新建日程</h2></div><button class="close-button" id="closeDialog" type="button" aria-label="关闭">×</button></div><div class="dialog-body"><div class="form-row"><label class="field full"><span>事项名称 <b>*</b></span><input name="title" maxlength="80" placeholder="例如：省考笔试 / 某单位面试" required></label></div><div class="form-row"><label class="field"><span>类型</span><select name="type"><option value="written">笔试</option><option value="interview">面试</option><option value="deadline">其他事项</option></select></label><label class="field"><span>状态</span><select name="status"><option value="planned">待参加</option><option value="done">已完成</option></select></label></div><div class="form-row"><label class="field"><span>日期 <b>*</b></span><input name="date" type="date" required></label><label class="field"><span>地点</span><input name="location" maxlength="120" placeholder="考点 / 线上会议"></label></div><div class="form-row"><label class="field"><span>开始时间 <b>*</b></span><input name="start" type="time" required></label><label class="field"><span>结束时间 <b>*</b></span><input name="end" type="time" required></label></div><div class="form-row"><label class="field full"><span>备注</span><textarea name="notes" rows="3" maxlength="1000" placeholder="准考证、材料清单、联系人等"></textarea></label></div><p class="form-error" id="formError" role="alert" hidden></p></div><div class="dialog-foot"><button class="delete-button" id="deleteEvent" type="button" hidden>删除日程</button><span class="foot-spacer"></span><button class="button button-light" id="cancelDialog" type="button">取消</button><button class="button button-primary" type="submit">保存日程</button></div></form></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="./app.js"></script>
+</body>
+</html>
