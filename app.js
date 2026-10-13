@@ -30,7 +30,7 @@
   function eventDate(e) { return new Date(`${e.date}T${e.start}:00`); }
   function sorted(list) { return [...list].sort((a,b) => eventDate(a) - eventDate(b)); }
   function shortDate(d) { return `${d.getMonth()+1}月${d.getDate()}日`; }
-  function currentDays() { return view === 'day' ? [selected] : Array.from({length:7}, (_,i) => addDays(monday(selected), i)); }
+  function currentDays() { return Array.from({length:7}, (_,i) => addDays(monday(selected), i)); }
   function render() { renderStats(); renderCalendar(); renderUpcoming(); }
 
   function renderStats() {
@@ -52,15 +52,15 @@
     days.forEach(day => {
       const key = dateKey(day);
       const row = document.createElement('div');
-      row.className = `week-row${key === today() ? ' today' : ''}`;
+      row.className = `week-row${key === today() ? ' today' : ''}${key === dateKey(selected) ? ' selected' : ''}`;
       const label = document.createElement('button');
       label.type = 'button';
       label.className = 'week-day';
-      label.setAttribute('aria-label', `${shortDate(day)} ${dow[day.getDay()]}，查看当天时间轴`);
+      label.setAttribute('aria-label', `${shortDate(day)} ${dow[day.getDay()]}，添加日程`);
       const number = document.createElement('strong'); number.textContent = day.getDate();
       const weekday = document.createElement('span'); weekday.textContent = dow[day.getDay()];
       label.append(number, weekday);
-      label.addEventListener('click', () => { selected = day; view = 'day'; renderCalendar(); });
+      label.addEventListener('click', () => { selected = day; openNew(key); });
 
       const items = document.createElement('div');
       items.className = 'week-items';
@@ -97,53 +97,74 @@
   }
 
   function renderCalendar() {
-    const days = currentDays(), first = days[0], last = days[days.length - 1];
-    $('monthTitle').textContent = first.getMonth() === last.getMonth() ? `${first.getFullYear()}年 ${first.getMonth()+1}月` : `${first.getMonth()+1}月 — ${last.getMonth()+1}月`;
-    $('weekView').classList.toggle('active', view === 'week'); $('dayView').classList.toggle('active', view === 'day');
+    const days = currentDays(), first = days[0], last = days[6];
+    $('monthTitle').textContent = view === 'month'
+      ? `${selected.getFullYear()}年 ${selected.getMonth()+1}月`
+      : first.getMonth() === last.getMonth()
+        ? `${first.getFullYear()}年 ${first.getMonth()+1}月 · ${first.getDate()}—${last.getDate()}日`
+        : `${first.getMonth()+1}月${first.getDate()}日 — ${last.getMonth()+1}月${last.getDate()}日`;
+    $('weekView').classList.toggle('active', view === 'week');
+    $('monthView').classList.toggle('active', view === 'month');
+    $('prevWeek').setAttribute('aria-label', view === 'month' ? '上个月' : '上一周');
+    $('nextWeek').setAttribute('aria-label', view === 'month' ? '下个月' : '下一周');
     document.querySelectorAll('.filter').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
-    const calendar = $('calendar'); calendar.className = `calendar ${view === 'day' ? 'day-mode' : 'week-mode'}`;
+    const calendar = $('calendar');
+    calendar.className = `calendar ${view}-mode`;
     $('calendarScroll').classList.toggle('week-scroll', view === 'week');
-    calendar.style.setProperty('--cols', days.length);
     calendar.replaceChildren();
-    if (view === 'week') { renderWeekOverview(calendar, days); return; }
-    const heads = document.createElement('div'); heads.className='day-heads';
-    const corner = document.createElement('div'); corner.className='time-head'; heads.append(corner);
-    const dow = ['周日','周一','周二','周三','周四','周五','周六'];
-    days.forEach(d => { const b=document.createElement('button'); b.type='button'; b.className=`day-head${dateKey(d)===today()?' today':''}${dateKey(d)===dateKey(selected)?' selected':''}`; b.innerHTML=`<span class="dow">${dow[d.getDay()]}</span><span class="date-num">${d.getDate()}</span>`; b.addEventListener('click',()=>{ selected=d; view='day'; renderCalendar(); }); heads.append(b); });
-    calendar.append(heads);
-    const shown = events.filter(e => (filter==='all'||e.type===filter) && days.some(d=>dateKey(d)===e.date));
-    let startHour = 7, endHour = 23;
-    shown.forEach(e => { startHour=Math.min(startHour,Math.floor(minutes(e.start)/60)); endHour=Math.max(endHour,Math.ceil(minutes(e.end)/60)); });
-    endHour = Math.min(24,endHour); const hourCount=endHour-startHour;
-    const body=document.createElement('div'); body.className='time-body'; body.style.height=`calc(var(--hour) * ${hourCount})`;
-    const labels=document.createElement('div'); labels.className='time-labels';
-    for(let h=startHour;h<endHour;h++){ const el=document.createElement('div'); el.className='hour-label'; el.textContent=`${pad(h)}:00`; labels.append(el); }
-    body.append(labels);
-    days.forEach(d => {
-      const col=document.createElement('div'); col.className=`day-column${dateKey(d)===today()?' today-column':''}`; col.dataset.date=dateKey(d);
-      col.addEventListener('click', ev => { if(ev.target.closest('.calendar-event')) return; const rect=col.getBoundingClientRect(); const y=ev.clientY-rect.top; const hourPx=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hour')) || 52; const minute=Math.max(0,Math.min(23*60+30,Math.round((startHour*60+y/hourPx*60)/30)*30)); openNew(dateKey(d),`${pad(Math.floor(minute/60))}:${pad(minute%60)}`); });
-      const dayEvents=sorted(shown.filter(e=>e.date===dateKey(d)));
-      const lanes=[], laneById=new Map();
-      dayEvents.forEach(e => { const a=minutes(e.start), z=minutes(e.end); let lane=lanes.findIndex(end=>end<=a); if(lane<0){lane=lanes.length;lanes.push(z);}else lanes[lane]=z; laneById.set(e.id,lane); });
-      const laneCount=Math.max(1,lanes.length);
-      dayEvents.forEach(e => {
-        const card=document.createElement('button'); card.type='button'; card.className=`calendar-event ${e.type}${e.status==='done'?' done':''}`;
-        const duration=Math.max(20,minutes(e.end)-minutes(e.start)); if(duration<44)card.classList.add('short');
-        card.style.top=`calc(var(--hour) * ${(minutes(e.start)-startHour*60)/60} + 2px)`;
-        card.style.height=`calc(var(--hour) * ${duration/60} - 4px)`;
-        if(laneCount>1){ card.style.left=`calc(${laneById.get(e.id)/laneCount*100}% + 3px)`; card.style.width=`calc(${100/laneCount}% - 6px)`; card.style.right='auto'; }
-        const t=document.createElement('span'); t.className='event-time'; t.textContent=`${e.start} — ${e.end}`;
-        const title=document.createElement('span'); title.className='event-title'; title.textContent=e.title;
-        card.append(t,title);
-        if(e.location){const loc=document.createElement('span');loc.className='event-place';loc.textContent=`⌖ ${e.location}`;card.append(loc);}
-        card.title=`${e.title}\n${e.start}–${e.end}${e.location?'\n'+e.location:''}`;
-        card.addEventListener('click',ev=>{ev.stopPropagation();openEdit(e.id);}); col.append(card);
-      });
-      if(dateKey(d)===today()) { const now=new Date(); const pos=(now.getHours()*60+now.getMinutes()-startHour*60)/60; if(pos>=0&&pos<=hourCount){const line=document.createElement('div');line.className='now-line';line.style.top=`calc(var(--hour) * ${pos})`;col.append(line);} }
-      body.append(col);
+    if (view === 'week') renderWeekOverview(calendar, days);
+    else renderMonthOverview(calendar);
+  }
+
+  function renderMonthOverview(calendar) {
+    const year = selected.getFullYear(), month = selected.getMonth();
+    const first = new Date(year, month, 1);
+    const start = monday(first);
+    const last = new Date(year, month + 1, 0);
+    const count = Math.ceil((Math.round((last - start) / 86400000) + 1) / 7) * 7;
+    const grid = document.createElement('div'); grid.className = 'month-overview';
+    ['一','二','三','四','五','六','日'].forEach(name => {
+      const head = document.createElement('span'); head.className = 'month-weekday'; head.textContent = name; grid.append(head);
     });
-    if(!shown.length){const empty=document.createElement('div');empty.className='empty-grid';empty.textContent='当天暂无安排，点击时间格添加';body.append(empty);}
-    calendar.append(body);
+    for (let i = 0; i < count; i++) {
+      const day = addDays(start, i), key = dateKey(day);
+      const dayEvents = sorted(events.filter(e => e.date === key && (filter === 'all' || e.type === filter)));
+      const cell = document.createElement('button'); cell.type = 'button';
+      cell.className = `month-day${day.getMonth() !== month ? ' outside' : ''}${key === today() ? ' today' : ''}${key === dateKey(selected) ? ' selected' : ''}`;
+      cell.setAttribute('aria-label', `${day.getFullYear()}年${shortDate(day)}，${dayEvents.length}项安排，查看所在周`);
+      const num = document.createElement('strong'); num.textContent = day.getDate(); cell.append(num);
+      dayEvents.slice(0, 2).forEach(e => {
+        const item = document.createElement('span'); item.className = `month-event ${e.type}`;
+        item.textContent = e.title; item.title = `${e.start} ${e.title}`; cell.append(item);
+      });
+      if (dayEvents.length > 2) {
+        const more = document.createElement('small'); more.textContent = `另有 ${dayEvents.length - 2} 项`; cell.append(more);
+      }
+      cell.addEventListener('click', () => { selected = day; view = 'week'; renderCalendar(); });
+      grid.append(cell);
+    }
+    calendar.append(grid);
+    const hint = document.createElement('p'); hint.className = 'month-hint'; hint.textContent = '点日期查看那一周，再点 ＋ 添加日程'; calendar.append(hint);
+  }
+
+  let pickerMonth = new Date(selected.getFullYear(), selected.getMonth(), 1);
+  function renderPicker() {
+    const year = pickerMonth.getFullYear(), month = pickerMonth.getMonth();
+    $('pickerTitle').textContent = `${year}年 ${month + 1}月`;
+    const grid = $('pickerDays'); grid.replaceChildren();
+    const first = new Date(year, month, 1), start = monday(first);
+    const last = new Date(year, month + 1, 0);
+    const count = Math.ceil((Math.round((last - start) / 86400000) + 1) / 7) * 7;
+    for (let i = 0; i < count; i++) {
+      const day = addDays(start, i), key = dateKey(day);
+      const button = document.createElement('button'); button.type = 'button';
+      button.className = `picker-day${day.getMonth() !== month ? ' outside' : ''}${key === today() ? ' today' : ''}${key === dateKey(selected) ? ' selected' : ''}`;
+      button.textContent = day.getDate();
+      button.setAttribute('aria-label', `${day.getFullYear()}年${shortDate(day)}${events.some(e => e.date === key) ? '，有日程' : ''}`);
+      if (events.some(e => e.date === key)) button.classList.add('has-events');
+      button.addEventListener('click', () => { selected = day; view = 'week'; $('datePicker').close(); renderCalendar(); });
+      grid.append(button);
+    }
   }
 
   function renderUpcoming() {
@@ -180,10 +201,15 @@
   $('deleteEvent').addEventListener('click',()=>{const e=events.find(e=>e.id===editing);if(!e)return;if(!confirm(`删除「${e.title}」？`))return;const updated=events.filter(e=>e.id!==editing);if(!persist(updated))return;events=updated;render();closeDialog();notify('日程已删除');});
   $('closeDialog').addEventListener('click',closeDialog);$('cancelDialog').addEventListener('click',closeDialog);
   $('addTop').addEventListener('click',()=>openNew(dateKey(selected)));$('addSide').addEventListener('click',()=>openNew(dateKey(selected)));
-  $('prevWeek').addEventListener('click',()=>{selected=addDays(selected,view==='day'?-1:-7);renderCalendar();});
-  $('nextWeek').addEventListener('click',()=>{selected=addDays(selected,view==='day'?1:7);renderCalendar();});
-  $('todayButton').addEventListener('click',()=>{selected=new Date();renderCalendar();});
-  $('weekView').addEventListener('click',()=>{view='week';renderCalendar();});$('dayView').addEventListener('click',()=>{view='day';renderCalendar();});
+  $('prevWeek').addEventListener('click',()=>{selected=view==='month'?new Date(selected.getFullYear(),selected.getMonth()-1,1):addDays(selected,-7);renderCalendar();});
+  $('nextWeek').addEventListener('click',()=>{selected=view==='month'?new Date(selected.getFullYear(),selected.getMonth()+1,1):addDays(selected,7);renderCalendar();});
+  $('todayButton').addEventListener('click',()=>{pickerMonth=new Date(selected.getFullYear(),selected.getMonth(),1);renderPicker();$('datePicker').showModal();});
+  $('pickerPrev').addEventListener('click',()=>{pickerMonth=new Date(pickerMonth.getFullYear(),pickerMonth.getMonth()-1,1);renderPicker();});
+  $('pickerNext').addEventListener('click',()=>{pickerMonth=new Date(pickerMonth.getFullYear(),pickerMonth.getMonth()+1,1);renderPicker();});
+  $('pickerToday').addEventListener('click',()=>{selected=new Date();view='week';$('datePicker').close();renderCalendar();});
+  $('pickerClose').addEventListener('click',()=>$('datePicker').close());
+  $('weekView').addEventListener('click',()=>{view='week';renderCalendar();});
+  $('monthView').addEventListener('click',()=>{view='month';renderCalendar();});
   document.querySelectorAll('.filter').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.filter;renderCalendar();}));
 
   function download(name,contents,type){const blob=new Blob([contents],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);}

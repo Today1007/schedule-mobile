@@ -11,6 +11,7 @@
 .week-row{display:grid;grid-template-columns:65px minmax(0,1fr) 30px;align-items:center;gap:12px;min-height:51px;padding:8px 6px;border-bottom:1px solid var(--line)}
 .week-row:last-child{border-bottom:0}
 .week-row.today{background:#f5f9f3;border-radius:10px}
+.week-row.selected:not(.today){background:#f5f8f2;border-radius:10px}
 .week-day{display:flex;align-items:center;gap:8px;border:0;background:transparent;color:#667267;text-align:left;padding:0}
 .week-day strong{display:grid;place-items:center;width:27px;height:27px;flex:none;font-size:18px;color:#303b32}
 .week-day span{white-space:nowrap;font-size:11px}
@@ -36,4 +37,39 @@
   .week-event{width:100%;min-width:0;max-width:none;min-height:28px;padding:5px 7px;font-size:10px;gap:6px}
   .week-event-time{font-size:10px}
   .week-add{width:23px;height:23px;border-radius:6px;font-size:16px}
+}
+
+/* Month overview stays compact and leads back to the seven-day agenda. */
+.calendar.month-mode{min-width:0;width:100%}
+.month-overview{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:6px 15px 0;gap:4px}
+.month-weekday{text-align:center;color:#98a399;font-size:11px;font-weight:700;padding:7px 0}
+.month-day{min-width:0;min-height:83px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;border:1px solid #edf0e9;border-radius:9px;background:#fff;padding:6px;color:#354137;overflow:hidden}
+.month-day:hover{background:#f5f9f3;border-color:#d6e6d4}
+.month-day.outside{background:#fafbf9;color:#b2bcb1}
+.month-day.selected{border-color:#86ac8b;box-shadow:inset 0 0 0 1px #86ac8b}
+.month-day strong{display:grid;place-items:center;min-width:23px;height:23px;font-size:12px;line-height:1}
+.month-day.today strong{border-radius:50%;background:#345b43;color:#fff}
+.month-event{display:block;width:100%;padding:2px 4px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.month-event.written{background:#fcf1df;color:#916d32}.month-event.interview{background:#eaf0f9;color:#5c78a1}.month-event.deadline{background:#f3edf5;color:#8f719c}
+.month-day small{font-size:9px;color:#8b978c;white-space:nowrap}
+.month-hint{margin:0;padding:9px 20px 13px;color:#99a69a;text-align:right;font-size:10px}
+.date-picker{border:0;border-radius:16px;width:min(360px,calc(100vw - 28px));padding:17px;box-shadow:0 22px 70px #2338274d;color:#2e3b31}
+.date-picker::backdrop{background:#17281990;backdrop-filter:blur(3px)}
+.picker-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.picker-head h2{margin:0;font-size:17px}
+.picker-weekdays,.picker-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}
+.picker-weekdays{margin-top:14px;color:#94a096;font-size:11px}
+.picker-weekdays span{padding:7px 0}
+.picker-day{height:39px;position:relative;border:0;border-radius:8px;background:transparent;color:#3b473e;font-size:13px}
+.picker-day:hover{background:#eff5ec}.picker-day.outside{color:#b6beb5}.picker-day.selected{background:#e3efe0;color:#284f34;font-weight:800}.picker-day.today{box-shadow:inset 0 0 0 1px #9ebb9e}
+.picker-day.has-events::after{content:'';position:absolute;width:4px;height:4px;border-radius:50%;background:#d2a34b;left:calc(50% - 2px);bottom:3px}
+.picker-foot{display:flex;justify-content:space-between;gap:10px;margin-top:17px;border-top:1px solid var(--line);padding-top:15px}.picker-foot .button{font-size:11px;min-height:33px;padding:0 12px}
+@media(max-width:560px){
+  .month-overview{padding:3px 7px 0;gap:2px}
+  .month-weekday{font-size:10px;padding:5px 0}
+  .month-day{min-height:65px;border-radius:6px;padding:3px;gap:3px}
+  .month-day strong{min-width:20px;height:20px;font-size:11px}
+  .month-event{font-size:8px;padding:2px;line-height:1.2}
+  .month-day small{font-size:8px}
+  .month-hint{padding:8px 10px 11px}
 }

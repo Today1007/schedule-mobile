@@ -8,7 +8,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon-192.png" sizes="192x192" type="image/png">
   <title>日程安排 · 笔试面试时间表</title>
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=3">
 </head>
 <body>
   <div class="app-shell">
@@ -32,13 +32,13 @@
             <div class="month-heading"><span class="eyebrow">CALENDAR</span><h2 id="monthTitle"></h2></div>
             <div class="calendar-controls">
               <button class="icon-button" id="prevWeek" type="button" aria-label="上一周">‹</button>
-              <button class="today-button" id="todayButton" type="button">今天</button>
+              <button class="today-button" id="todayButton" type="button" aria-haspopup="dialog" aria-controls="datePicker">今天 <span aria-hidden="true">⌄</span></button>
               <button class="icon-button" id="nextWeek" type="button" aria-label="下一周">›</button>
               <span class="divider"></span>
-              <div class="segmented" role="group" aria-label="视图"><button id="weekView" type="button" class="active">周概览</button><button id="dayView" type="button">日时间轴</button></div>
+              <div class="segmented" role="group" aria-label="视图"><button id="weekView" type="button" class="active">周概览</button><button id="monthView" type="button">月概览</button></div>
             </div>
           </div>
-          <div class="legend"><button class="filter active" data-filter="all" type="button"><i class="dot all"></i>全部</button><button class="filter" data-filter="written" type="button"><i class="dot written"></i>笔试</button><button class="filter" data-filter="interview" type="button"><i class="dot interview"></i>面试</button><button class="filter" data-filter="deadline" type="button"><i class="dot deadline"></i>其他事项</button><span class="legend-hint">点日期查看当天 · 点事项查看详情</span></div>
+          <div class="legend"><button class="filter active" data-filter="all" type="button"><i class="dot all"></i>全部</button><button class="filter" data-filter="written" type="button"><i class="dot written"></i>笔试</button><button class="filter" data-filter="interview" type="button"><i class="dot interview"></i>面试</button><button class="filter" data-filter="deadline" type="button"><i class="dot deadline"></i>其他事项</button><span class="legend-hint">点日期添加日程 · 点事项查看详情</span></div>
           <div class="calendar-scroll" id="calendarScroll"><div class="calendar" id="calendar"></div></div>
         </div>
       </section>
@@ -51,8 +51,9 @@
     </main>
   </div>
 
+  <dialog id="datePicker" class="date-picker" aria-labelledby="pickerTitle"><div class="picker-head"><button class="icon-button" id="pickerPrev" type="button" aria-label="上个月">‹</button><h2 id="pickerTitle"></h2><button class="icon-button" id="pickerNext" type="button" aria-label="下个月">›</button></div><div class="picker-weekdays"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div><div class="picker-days" id="pickerDays"></div><div class="picker-foot"><button class="button button-light" id="pickerToday" type="button">回到今天</button><button class="button button-light" id="pickerClose" type="button">关闭</button></div></dialog>
   <dialog id="eventDialog" class="event-dialog"><form id="eventForm" novalidate><div class="dialog-head"><div><span class="eyebrow">SCHEDULE DETAILS</span><h2 id="dialogTitle">新建日程</h2></div><button class="close-button" id="closeDialog" type="button" aria-label="关闭">×</button></div><div class="dialog-body"><div class="form-row"><label class="field full"><span>事项名称 <b>*</b></span><input name="title" maxlength="80" placeholder="例如：省考笔试 / 某单位面试" required></label></div><div class="form-row"><label class="field"><span>类型</span><select name="type"><option value="written">笔试</option><option value="interview">面试</option><option value="deadline">其他事项</option></select></label><label class="field"><span>状态</span><select name="status"><option value="planned">待参加</option><option value="done">已完成</option></select></label></div><div class="form-row"><label class="field"><span>日期 <b>*</b></span><input name="date" type="date" required></label><label class="field"><span>地点</span><input name="location" maxlength="120" placeholder="考点 / 线上会议"></label></div><div class="form-row"><label class="field"><span>开始时间 <b>*</b></span><input name="start" type="time" required></label><label class="field"><span>结束时间 <b>*</b></span><input name="end" type="time" required></label></div><div class="form-row"><label class="field full"><span>备注</span><textarea name="notes" rows="3" maxlength="1000" placeholder="准考证、材料清单、联系人等"></textarea></label></div><p class="form-error" id="formError" role="alert" hidden></p></div><div class="dialog-foot"><button class="delete-button" id="deleteEvent" type="button" hidden>删除日程</button><span class="foot-spacer"></span><button class="button button-light" id="cancelDialog" type="button">取消</button><button class="button button-primary" type="submit">保存日程</button></div></form></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="./app.js"></script>
+  <script src="./app.js?v=3"></script>
 </body>
 </html>
