@@ -20,7 +20,7 @@
     localStorage.setItem(KEY, JSON.stringify(events));
   } catch { storageAvailable = false; }
   let selected = new Date();
-  let view = window.matchMedia('(max-width: 560px)').matches ? 'day' : 'week';
+  let view = 'week';
   let filter = 'all';
   let editing = null;
   let toastTimer;
@@ -45,14 +45,67 @@
     data.forEach(s => { const card = document.createElement('div'); card.className='stat-card'; card.innerHTML=`<div class="stat-icon ${s.cls}">${s.icon}</div><div class="stat-text"><span>${s.label}</span><strong>${s.value}<small>${s.unit}</small></strong></div>`; root.append(card); });
   }
 
+  function renderWeekOverview(calendar, days) {
+    const dow = ['周日','周一','周二','周三','周四','周五','周六'];
+    const overview = document.createElement('div');
+    overview.className = 'week-overview';
+    days.forEach(day => {
+      const key = dateKey(day);
+      const row = document.createElement('div');
+      row.className = `week-row${key === today() ? ' today' : ''}`;
+      const label = document.createElement('button');
+      label.type = 'button';
+      label.className = 'week-day';
+      label.setAttribute('aria-label', `${shortDate(day)} ${dow[day.getDay()]}，查看当天时间轴`);
+      const number = document.createElement('strong'); number.textContent = day.getDate();
+      const weekday = document.createElement('span'); weekday.textContent = dow[day.getDay()];
+      label.append(number, weekday);
+      label.addEventListener('click', () => { selected = day; view = 'day'; renderCalendar(); });
+
+      const items = document.createElement('div');
+      items.className = 'week-items';
+      const dayEvents = sorted(events.filter(e => e.date === key && (filter === 'all' || e.type === filter)));
+      if (dayEvents.length) {
+        dayEvents.forEach(e => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = `week-event ${e.type}${e.status === 'done' ? ' done' : ''}`;
+          item.setAttribute('aria-label', `${e.start} ${e.title}，查看详情`);
+          const time = document.createElement('span'); time.className = 'week-event-time'; time.textContent = e.start;
+          const title = document.createElement('span'); title.className = 'week-event-title'; title.textContent = e.title;
+          item.append(time, title);
+          item.addEventListener('click', () => openEdit(e.id));
+          items.append(item);
+        });
+      } else {
+        const empty = document.createElement('span');
+        empty.className = 'week-empty';
+        empty.textContent = '暂无安排';
+        items.append(empty);
+      }
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'week-add';
+      add.textContent = '+';
+      add.title = `${shortDate(day)}添加日程`;
+      add.setAttribute('aria-label', `${shortDate(day)}添加日程`);
+      add.addEventListener('click', () => openNew(key));
+      row.append(label, items, add);
+      overview.append(row);
+    });
+    calendar.append(overview);
+  }
+
   function renderCalendar() {
     const days = currentDays(), first = days[0], last = days[days.length - 1];
     $('monthTitle').textContent = first.getMonth() === last.getMonth() ? `${first.getFullYear()}年 ${first.getMonth()+1}月` : `${first.getMonth()+1}月 — ${last.getMonth()+1}月`;
     $('weekView').classList.toggle('active', view === 'week'); $('dayView').classList.toggle('active', view === 'day');
     document.querySelectorAll('.filter').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
-    const calendar = $('calendar'); calendar.className = `calendar ${view === 'day' ? 'day-mode' : ''}`;
+    const calendar = $('calendar'); calendar.className = `calendar ${view === 'day' ? 'day-mode' : 'week-mode'}`;
+    $('calendarScroll').classList.toggle('week-scroll', view === 'week');
     calendar.style.setProperty('--cols', days.length);
     calendar.replaceChildren();
+    if (view === 'week') { renderWeekOverview(calendar, days); return; }
     const heads = document.createElement('div'); heads.className='day-heads';
     const corner = document.createElement('div'); corner.className='time-head'; heads.append(corner);
     const dow = ['周日','周一','周二','周三','周四','周五','周六'];
@@ -68,7 +121,7 @@
     body.append(labels);
     days.forEach(d => {
       const col=document.createElement('div'); col.className=`day-column${dateKey(d)===today()?' today-column':''}`; col.dataset.date=dateKey(d);
-      col.addEventListener('click', ev => { if(ev.target.closest('.calendar-event')) return; const rect=col.getBoundingClientRect(); const y=ev.clientY-rect.top; const hourPx=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hour')) || 76; const minute=Math.max(0,Math.min(23*60+30,Math.round((startHour*60+y/hourPx*60)/30)*30)); openNew(dateKey(d),`${pad(Math.floor(minute/60))}:${pad(minute%60)}`); });
+      col.addEventListener('click', ev => { if(ev.target.closest('.calendar-event')) return; const rect=col.getBoundingClientRect(); const y=ev.clientY-rect.top; const hourPx=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hour')) || 52; const minute=Math.max(0,Math.min(23*60+30,Math.round((startHour*60+y/hourPx*60)/30)*30)); openNew(dateKey(d),`${pad(Math.floor(minute/60))}:${pad(minute%60)}`); });
       const dayEvents=sorted(shown.filter(e=>e.date===dateKey(d)));
       const lanes=[], laneById=new Map();
       dayEvents.forEach(e => { const a=minutes(e.start), z=minutes(e.end); let lane=lanes.findIndex(end=>end<=a); if(lane<0){lane=lanes.length;lanes.push(z);}else lanes[lane]=z; laneById.set(e.id,lane); });
@@ -89,7 +142,7 @@
       if(dateKey(d)===today()) { const now=new Date(); const pos=(now.getHours()*60+now.getMinutes()-startHour*60)/60; if(pos>=0&&pos<=hourCount){const line=document.createElement('div');line.className='now-line';line.style.top=`calc(var(--hour) * ${pos})`;col.append(line);} }
       body.append(col);
     });
-    if(!shown.length){const empty=document.createElement('div');empty.className='empty-grid';empty.textContent=events.length ? '这一段时间还没有符合筛选的日程' : '这周还没有安排，点击时间格添加第一项';body.append(empty);}
+    if(!shown.length){const empty=document.createElement('div');empty.className='empty-grid';empty.textContent='当天暂无安排，点击时间格添加';body.append(empty);}
     calendar.append(body);
   }
 
