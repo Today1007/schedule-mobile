@@ -1,5 +1,5 @@
-const CACHE = 'schedule-mobile-v3';
-const ASSETS = ['./', './index.html', './styles.css?v=3', './app.js?v=3', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+const CACHE = 'schedule-mobile-v4';
+const ASSETS = ['./', './index.html', './styles.css?v=4', './app.js?v=4', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
 });

@@ -31,7 +31,7 @@
   function sorted(list) { return [...list].sort((a,b) => eventDate(a) - eventDate(b)); }
   function shortDate(d) { return `${d.getMonth()+1}月${d.getDate()}日`; }
   function currentDays() { return Array.from({length:7}, (_,i) => addDays(monday(selected), i)); }
-  function render() { renderStats(); renderCalendar(); renderUpcoming(); }
+  function render() { renderStats(); renderCalendar(); }
 
   function renderStats() {
     const now = new Date();
@@ -67,15 +67,24 @@
       const dayEvents = sorted(events.filter(e => e.date === key && (filter === 'all' || e.type === filter)));
       if (dayEvents.length) {
         dayEvents.forEach(e => {
+          const entry = document.createElement('div');
+          entry.className = 'week-event-entry';
           const item = document.createElement('button');
           item.type = 'button';
           item.className = `week-event ${e.type}${e.status === 'done' ? ' done' : ''}`;
-          item.setAttribute('aria-label', `${e.start} ${e.title}，查看详情`);
-          const time = document.createElement('span'); time.className = 'week-event-time'; time.textContent = e.start;
+          item.setAttribute('aria-label', `${e.start}到${e.end} ${e.title}，查看详情`);
+          const time = document.createElement('span'); time.className = 'week-event-time'; time.textContent = `${e.start}—${e.end}`;
           const title = document.createElement('span'); title.className = 'week-event-title'; title.textContent = e.title;
           item.append(time, title);
           item.addEventListener('click', () => openEdit(e.id));
-          items.append(item);
+          const complete = document.createElement('button');
+          complete.type = 'button';
+          complete.className = `week-complete${e.status === 'done' ? ' is-done' : ''}`;
+          complete.textContent = e.status === 'done' ? '撤销' : '完成';
+          complete.setAttribute('aria-label', `${e.status === 'done' ? '撤销已完成' : '标记已完成'}：${e.title}`);
+          complete.addEventListener('click', () => toggleDone(e.id));
+          entry.append(item, complete);
+          items.append(entry);
         });
       } else {
         const empty = document.createElement('span');
@@ -167,19 +176,15 @@
     }
   }
 
-  function renderUpcoming() {
-    const root=$('upcomingList');root.replaceChildren();
-    const now=new Date(); const upcoming=sorted(events.filter(e=>e.status!=='done'&&new Date(`${e.date}T${e.end}:00`)>=now)).slice(0,5);
-    if(!upcoming.length){const empty=document.createElement('div');empty.className='side-empty';empty.textContent='暂无即将到来的日程。添加一场考试，开始规划吧。';root.append(empty);return;}
-    upcoming.forEach(e=>{
-      const d=fromKey(e.date),item=document.createElement('div');item.className='upcoming-item';
-      const date=document.createElement('div');date.className='upcoming-date';date.innerHTML=`<strong>${d.getDate()}</strong><small>${d.getMonth()+1}月</small>`;
-      const content=document.createElement('div');content.className='upcoming-content';
-      const title=document.createElement('button');title.type='button';title.textContent=e.title;title.addEventListener('click',()=>openEdit(e.id));
-      const meta=document.createElement('div');meta.className='upcoming-meta';meta.textContent=`${e.start}—${e.end}${e.location?' · '+e.location:''}`;
-      const pill=document.createElement('span');pill.className=`type-pill ${e.type}`;pill.textContent=TYPE[e.type].label;
-      content.append(title,meta,pill);item.append(date,content);root.append(item);
-    });
+  function toggleDone(id) {
+    const current = events.find(e => e.id === id);
+    if (!current) return;
+    const done = current.status !== 'done';
+    const updated = events.map(e => e.id === id ? { ...e, status: done ? 'done' : 'planned' } : e);
+    if (!persist(updated)) return;
+    events = updated;
+    render();
+    notify(done ? '已标记完成' : '已恢复为待参加');
   }
 
   const dialog=$('eventDialog'), form=$('eventForm');
