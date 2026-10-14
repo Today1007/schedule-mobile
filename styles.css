@@ -72,6 +72,7 @@
 .picker-day:hover{background:#eff5ec}.picker-day.outside{color:#b6beb5}.picker-day.selected{background:#e3efe0;color:#284f34;font-weight:800}.picker-day.today{box-shadow:inset 0 0 0 1px #9ebb9e}
 .picker-day.has-events::after{content:'';position:absolute;width:4px;height:4px;border-radius:50%;background:#d2a34b;left:calc(50% - 2px);bottom:3px}
 .picker-foot{display:flex;justify-content:space-between;gap:10px;margin-top:17px;border-top:1px solid var(--line);padding-top:15px}.picker-foot .button{font-size:11px;min-height:33px;padding:0 12px}
+@media(min-width:561px) and (max-width:820px){.sidebar{grid-template-columns:1fr}}
 @media(max-width:560px){
   .month-overview{padding:3px 7px 0;gap:2px}
   .month-weekday{font-size:10px;padding:5px 0}

@@ -217,20 +217,6 @@
   $('monthView').addEventListener('click',()=>{view='month';renderCalendar();});
   document.querySelectorAll('.filter').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.filter;renderCalendar();}));
 
-  function download(name,contents,type){const blob=new Blob([contents],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);}
-  $('exportJson').addEventListener('click',()=>{download(`日程安排备份-${today()}.json`,JSON.stringify({app:'日程安排',version:1,exportedAt:new Date().toISOString(),events},null,2),'application/json;charset=utf-8');notify('备份已下载');});
-  $('importJson').addEventListener('click',()=>$('importFile').click());
-  $('importFile').addEventListener('change',async ev=>{
-    const file=ev.target.files[0];if(!file)return;
-    try{const data=JSON.parse(await file.text());if(!Array.isArray(data.events)||!data.events.every(safe))throw Error('invalid');if(!confirm(`将用备份中的 ${data.events.length} 项日程替换当前数据，继续吗？`))return;if(!persist(data.events))return;events=data.events;render();notify('备份已导入');}catch{notify('导入失败：请选择有效的日程备份文件');}finally{ev.target.value='';}
-  });
-  const icsEscape=s=>String(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
-  $('exportIcs').addEventListener('click',()=>{
-    const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
-    const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Schedule Planner//CN','CALSCALE:GREGORIAN','X-WR-CALNAME:日程安排'];
-    events.forEach(e=>{const day=e.date.replace(/-/g,'');lines.push('BEGIN:VEVENT',`UID:${e.id}@gankao-schedule`,`DTSTAMP:${stamp}`,`DTSTART:${day}T${e.start.replace(':','')}00`,`DTEND:${day}T${e.end.replace(':','')}00`,`SUMMARY:${icsEscape(e.title)}`,`DESCRIPTION:${icsEscape(e.notes)}`,`LOCATION:${icsEscape(e.location)}`,'END:VEVENT');});
-    lines.push('END:VCALENDAR');download(`日程安排-${today()}.ics`,lines.join('\r\n'),'text/calendar;charset=utf-8');notify('日历文件已下载');
-  });
   render();
   if (!storageAvailable) notify('当前浏览器不能保存日程，请换用 Chrome 或系统浏览器');
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => {});
